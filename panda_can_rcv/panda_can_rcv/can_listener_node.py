@@ -4,7 +4,7 @@ import time
 from panda_can_rcv.can_interface import CANInterface
 from panda_can_rcv.message_relay import MessageRelay
 from panda_msgs.msg import CANMessage
-from autoware_vehicle_msgs.msg import GearReport, SteeringReport, VelocityReport, TurnIndicatorsReport, HazardLightsReport
+from autoware_vehicle_msgs.msg import GearReport, SteeringReport, VelocityReport, TurnIndicatorsReport, HazardLightsReport, ControlModeReport
 from std_msgs.msg import String
 import cantools
 import os
@@ -26,6 +26,8 @@ class CANListenerNode(Node):
         self.declare_parameter('velocity_status_topic', '/vehicle/status/velocity_status')
         self.declare_parameter('turn_indicators_status_topic', '/vehicle/status/turn_indicators_status')
         self.declare_parameter('hazard_lights_status_topic', '/vehicle/status/hazard_lights_status')
+        self.declare_parameter('control_mode_status_topic', '/vehicle/status/control_mode')
+        self.declare_parameter('driving_mode',4)
 
 
         self.mode = self.get_parameter('mode').get_parameter_value().string_value
@@ -34,6 +36,7 @@ class CANListenerNode(Node):
         self.filter_topic = self.get_parameter('filter_topic').get_parameter_value().string_value
         self.allowed_ids = self.get_parameter('allowed_ids').get_parameter_value().integer_array_value
         self.dbc_file_path = self.get_parameter('dbc_file_path').get_parameter_value().string_value
+        self.driving_mode = self.get_parameter('driving_mode').get_parameter_value().integer_value
         self.publish_rate_hz = 3.0  # unified publish rate
 
 
@@ -99,6 +102,8 @@ class CANListenerNode(Node):
         self.steer_publisher = self.create_publisher(SteeringReport, self.get_parameter('steering_status_topic').get_parameter_value().string_value, 10)
         self.turn_signal_publisher = self.create_publisher(TurnIndicatorsReport, self.get_parameter('turn_indicators_status_topic').get_parameter_value().string_value, 10)
         self.hazard_light_publisher = self.create_publisher(HazardLightsReport, self.get_parameter('hazard_lights_status_topic').get_parameter_value().string_value, 10)
+        self.control_mode_publisher = self.create_publisher(ControlModeReport, self.get_parameter('control_mode_status_topic').get_parameter_value().string_value, 10)
+
 
         self.filter_publisher = self.create_publisher(CANMessage, self.filter_topic, 10)
         self.decode_publisher = self.create_publisher(String, self.decode_topic, 10)
@@ -246,6 +251,12 @@ class CANListenerNode(Node):
             hz_msg.stamp = now
             hz_msg.report = int(self.latest_signals['HAZARD_LIGHT'])+1
             self.hazard_light_publisher.publish(hz_msg)
+        
+        #   Control Mode Report - Fixing it a constant value of MANUAL Driving
+        control_mode_msg = ControlModeReport()
+        control_mode_msg.stamp = now
+        control_mode_msg.mode = self.driving_mode 
+        self.control_mode_publisher.publish(control_mode_msg)
 
         # if 'SPEED' in decoded_signals:
         #     velocity = float(decoded_signals['SPEED'])
