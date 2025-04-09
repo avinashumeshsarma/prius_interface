@@ -1,0 +1,155 @@
+VERSION ""
+
+
+NS_ :
+    NS_DESC_
+    CM_
+    BA_DEF_
+    BA_
+    VAL_
+    CAT_DEF_
+    CAT_
+    FILTER
+    BA_DEF_DEF_
+    EV_DATA_
+    ENVVAR_DATA_
+    SGTYPE_
+    SGTYPE_VAL_
+    BA_DEF_SGTYPE_
+    BA_SGTYPE_
+    SIG_TYPE_REF_
+    VAL_TABLE_
+    SIG_GROUP_
+    SIG_VALTYPE_
+    SIGTYPE_VALTYPE_
+    BO_TX_BU_
+    BA_DEF_REL_
+    BA_REL_
+    BA_DEF_DEF_REL_
+    BU_SG_REL_
+    BU_EV_REL_
+    BU_BO_REL_
+    SG_MUL_VAL_
+
+BS_: 
+BU_: XXX 
+BO_ 36 KINEMATICS: 8 XXX
+   SG_ ACCEL_Y : 33|10@0+ (0.03589,-18.375) [0|65535] "m/s^2" XXX
+   SG_ YAW_RATE : 1|10@0+ (0.244,-125) [0|65535] "deg/s" XXX
+   SG_ ACCEL_X : 17|10@0+ (0.03589,-18.375) [0|65535] "m/s^2" XXX
+
+BO_ 37 STEER_ANGLE_SENSOR: 8 XXX
+   SG_ STEER_ANGLE : 3|12@0- (1.5,0) [-500|500] "deg" XXX
+   SG_ STEER_FRACTION : 39|4@0- (0.1,0) [-0.7|0.7] "deg" XXX
+   SG_ STEER_RATE : 35|12@0- (1,0) [-2000|2000] "deg/s" XXX
+
+BO_ 166 BRAKE: 8 XXX
+   SG_ BRAKE_AMOUNT : 7|8@0+ (1,0) [0|255] "" XXX
+   SG_ BRAKE_PEDAL : 23|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 170 WHEEL_SPEEDS: 8 XXX
+   SG_ WHEEL_SPEED_FR : 7|16@0+ (0.01,-67.67) [0|250] "km/h" XXX
+   SG_ WHEEL_SPEED_FL : 23|16@0+ (0.01,-67.67) [0|250] "km/h" XXX
+   SG_ WHEEL_SPEED_RR : 39|16@0+ (0.01,-67.67) [0|250] "km/h" XXX
+   SG_ WHEEL_SPEED_RL : 55|16@0+ (0.01,-67.67) [0|250] "km/h" XXX
+
+BO_ 180 SPEED: 8 XXX
+   SG_ ENCODER : 39|8@0+ (1,0) [0|255] "" XXX
+   SG_ SPEED : 47|16@0+ (0.01,0) [0|250] "km/h" XXX
+   SG_ CHECKSUM : 63|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 295 GEAR_PACKET_HYBRID: 8 XXX
+   SG_ CAR_MOVEMENT : 25|10@0- (1,0) [0|255] "" XXX
+   SG_ COUNTER : 55|8@0+ (1,0) [0|255] "" XXX
+   SG_ CHECKSUM : 63|8@0+ (1,0) [0|255] "" XXX
+   SG_ GEAR : 47|4@0+ (1,0) [0|15] "" XXX
+
+BO_ 560 BRAKE_2: 7 XXX
+   SG_ BRAKE_PRESSED : 26|1@0+ (1,0) [0|1] "" XXX
+
+BO_ 581 GAS_PEDAL_HYBRID: 8 XXX
+   SG_ GAS_PEDAL : 23|8@0+ (0.005,0) [0|1] "" XXX
+
+BO_ 608 STEER_TORQUE_SENSOR: 8 XXX
+   SG_ STEER_TORQUE_EPS : 47|16@0- (1,0) [-32768|32767] "" XXX
+   SG_ STEER_TORQUE_DRIVER : 15|16@0- (1,0) [-32768|32767] "" XXX
+   SG_ STEER_ANGLE : 31|16@0- (0.0573,0) [-500|500] "" XXX
+   SG_ STEER_ANGLE_INITIALIZING : 3|1@0+ (1,0) [0|1] "" XXX
+   SG_ STEER_OVERRIDE : 0|1@0+ (1,0) [0|1] "" XXX
+   SG_ CHECKSUM : 63|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 705 GAS_PEDAL: 8 XXX
+   SG_ GAS_RELEASED : 3|1@0+ (1,0) [0|1] "" XXX
+   SG_ GAS_PEDAL : 55|8@0+ (0.005,0) [0|1] "" XXX
+
+BO_ 740 STEERING_LKA: 5 XXX
+   SG_ LKA_STATE : 31|8@0+ (1,0) [0|255] "" XXX
+   SG_ STEER_REQUEST : 0|1@0+ (1,0) [0|1] "" XXX
+   SG_ COUNTER : 6|6@0+ (1,0) [0|63] "" XXX
+   SG_ SET_ME_1 : 7|1@0+ (1,0) [0|1] "" XXX
+   SG_ STEER_TORQUE_CMD : 15|16@0- (1,0) [0|65535] "" XXX
+   SG_ CHECKSUM : 39|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 921 PCM_CRUISE_SM: 8 XXX
+   SG_ MAIN_ON : 4|1@0+ (1,0) [0|1] "" XXX
+   SG_ CRUISE_CONTROL_STATE : 11|4@0+ (1,0) [0|15] "" XXX
+   SG_ DISTANCE_LINES : 14|2@0+ (1,0) [0|3] "" XXX
+   SG_ TEMP_ACC_FAULTED : 15|1@0+ (1,0) [0|1] "" XXX
+   SG_ UI_SET_SPEED : 31|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 956 GEAR_PACKET: 8 XXX
+   SG_ SPORT_ON : 2|1@0+ (1,0) [0|1] "" XXX
+   SG_ GEAR : 13|6@0+ (1,0) [0|63] "" XXX
+   SG_ SPORT_GEAR_ON : 33|1@0+ (1,0) [0|1] "" XXX
+   SG_ SPORT_GEAR : 38|3@0+ (1,0) [0|7] "" XXX
+   SG_ ECON_ON : 40|1@0+ (1,0) [0|1] "" XXX
+   SG_ B_GEAR_ENGAGED : 41|1@0+ (1,0) [0|1] "" XXX
+   SG_ DRIVE_ENGAGED : 47|1@0+ (1,0) [0|1] "" XXX
+
+BO_ 1552 BODY_CONTROL_STATE_2: 8 XXX
+   SG_ UI_SPEED : 23|8@0+ (1,0) [0|255] "" XXX
+   SG_ METER_SLIDER_BRIGHTNESS_PCT : 30|7@0+ (1,0) [12|100] "%" XXX
+   SG_ METER_SLIDER_LOW_BRIGHTNESS : 37|1@0+ (1,0) [0|1] "" XXX
+   SG_ METER_SLIDER_DIMMED : 38|1@0+ (1,0) [0|1] "" XXX
+   SG_ UNITS : 63|3@0+ (1,0) [1|4] "" XXX
+
+BO_ 1556 BLINKERS_STATE: 8 XXX
+   SG_ TURN_SIGNALS : 29|2@0+ (1,0) [0|3] "" XXX
+   SG_ HAZARD_LIGHT : 27|1@0+ (1,0) [0|1] "" XXX
+
+BO_ 550 BRAKE_MODULE: 8 XXX
+   SG_ BRAKE_PRESSURE : 0|9@0+ (1,0) [0|511] "" XXX
+   SG_ BRAKE_POSITION : 16|9@0+ (1,0) [0|511] "" XXX
+   SG_ BRAKE_PRESSED : 37|1@0+ (1,0) [0|1] "" XXX
+
+CM_ SG_ 36 YAW_RATE "verify";
+CM_ SG_ 36 ACCEL_X "x-axis accel";
+CM_ SG_ 37 STEER_FRACTION "1/15th of the signal STEER_ANGLE, which is 1.5 deg; note that 0x8 is never set";
+CM_ SG_ 37 STEER_RATE "factor is tbd";
+CM_ SG_ 560 BRAKE_PRESSED "another brake pressed?";
+CM_ SG_ 581 GAS_PEDAL "it seems slightly filtered";
+CM_ SG_ 608 STEER_TORQUE_DRIVER "driver torque";
+CM_ SG_ 608 STEER_OVERRIDE "set when driver torque exceeds a certain value";
+CM_ SG_ 921 TEMP_ACC_FAULTED "1 when the UI is displaying or playing fault-related alerts or sounds. Also 1 when pressing main on.";
+CM_ SG_ 921 UI_SET_SPEED "set speed shown in the vehicle's UI with the vehicle's unit";
+CM_ SG_ 956 GEAR "on 6MT, only R shows.";
+CM_ SG_ 1552 UI_SPEED "Does not appear to match dash";
+CM_ SG_ 1552 METER_SLIDER_BRIGHTNESS_PCT "Combination display brightness setting, scales from 12 per cent to 100 per cent, reflects combination meter settings only, not linked with headlight state";
+CM_ SG_ 1552 METER_SLIDER_LOW_BRIGHTNESS "Combination display low brightness mode, also controls footwell lighting";
+CM_ SG_ 1552 METER_SLIDER_DIMMED "Combination display slider not at max, reflects combination meter settings only, not linked with headlight state";
+CM_ SG_ 550 BRAKE_PRESSURE "seems prop to pedal force";
+CM_ SG_ 550 BRAKE_POSITION "seems proportional to pedal displacement, unclear the max value of 0x1c8";
+VAL_ 295 GEAR 0 "P" 1 "R" 2 "N" 3 "D" 4 "B";
+VAL_ 921 CRUISE_CONTROL_STATE 2 "disabled" 11 "hold" 10 "hold_waiting_user_cmd" 6 "enabled" 5 "faulted";
+VAL_ 921 DISTANCE_LINES 0 "not displayed" 1 "close" 2 "medium" 3 "far";
+VAL_ 956 SPORT_ON 0 "off" 1 "on";
+VAL_ 956 GEAR 0 "D" 1 "S" 8 "N" 16 "R" 32 "P";
+VAL_ 956 SPORT_GEAR_ON 0 "off" 1 "on";
+VAL_ 956 SPORT_GEAR 1 "S1" 2 "S2" 3 "S3" 4 "S4" 5 "S5" 6 "S6";
+VAL_ 956 ECON_ON 0 "off" 1 "on";
+VAL_ 956 B_GEAR_ENGAGED 0 "off" 1 "on";
+VAL_ 956 DRIVE_ENGAGED 0 "off" 1 "on";
+VAL_ 1552 METER_SLIDER_LOW_BRIGHTNESS 1 "Low brightness mode, footwell lights off" 0 "Normal mode, footwell lights on";
+VAL_ 1552 METER_SLIDER_DIMMED 1 "Dimmed" 0 "Not Dimmed";
+VAL_ 1552 UNITS 1 "km (km/L)" 2 "km (L/100km)" 3 "miles (MPG US)" 4 "miles (MPG Imperial)";
+VAL_ 1556 TURN_SIGNALS 3 "none" 2 "right" 1 "left";
