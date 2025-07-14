@@ -77,12 +77,12 @@ class ZMQCapnpBridgeNode(Node):
         }
 
         # ROS publishers
-        self.control_mode_pub = self.create_publisher(ControlModeReport, '/vehicle1/status/control_mode', 10)
-        self.gear_pub = self.create_publisher(GearReport, '/vehicle1/status/gear_status', 10)
-        self.hazard_pub = self.create_publisher(HazardLightsReport, '/vehicle1/status/hazard_lights_status', 10)
-        self.steer_pub = self.create_publisher(SteeringReport, '/vehicle1/status/steering_status', 10)
-        self.turn_pub = self.create_publisher(TurnIndicatorsReport, '/vehicle1/status/turn_indicators_status', 10)
-        self.vel_pub = self.create_publisher(VelocityReport, '/vehicle1/status/velocity_status', 10)
+        self.control_mode_pub = self.create_publisher(ControlModeReport, '/vehicle/status/control_mode', 10)
+        self.gear_pub = self.create_publisher(GearReport, '/vehicle/status/gear_status', 10)
+        self.hazard_pub = self.create_publisher(HazardLightsReport, '/vehicle/status/hazard_lights_status', 10)
+        self.steer_pub = self.create_publisher(SteeringReport, '/vehicle/status/steering_status', 10)
+        self.turn_pub = self.create_publisher(TurnIndicatorsReport, '/vehicle/status/turn_indicators_status', 10)
+        self.vel_pub = self.create_publisher(VelocityReport, '/vehicle/status/velocity_status', 10)
 
         # ROS subscribers
         self.create_subscription(ActuationCommandStamped, '/control/command/actuation_cmd', self.actuation_cb, 10)
@@ -172,7 +172,7 @@ class ZMQCapnpBridgeNode(Node):
         msg = VelocityReport()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.longitudinal_velocity = float(self.state_signals['vEgo'])
-        msg.lateral_velocity = 0 #Need to change according to panda_can_rcv
+        msg.lateral_velocity = 0.0 #Need to change according to panda_can_rcv
         msg.heading_rate = float(self.state_signals['yaw_rate'])*0.017453 #
         msg.header.frame_id = "base_link"
         self.vel_pub.publish(msg)
