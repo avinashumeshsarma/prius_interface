@@ -37,7 +37,7 @@ class CANListenerNode(Node):
         self.allowed_ids = self.get_parameter('allowed_ids').get_parameter_value().integer_array_value
         self.dbc_file_path = self.get_parameter('dbc_file_path').get_parameter_value().string_value
         self.driving_mode = self.get_parameter('driving_mode').get_parameter_value().integer_value
-        self.publish_rate_hz = 3.0  # unified publish rate
+        self.publish_rate_hz = 6.0  # unified publish rate
 
 
         # Load DBC file
@@ -217,8 +217,11 @@ class CANListenerNode(Node):
             else:
                 beta=np.arctan((1.485*float(self.latest_signals['YAW_RATE'])*0.017453)/float(self.latest_signals['SPEED'])/3.6) # Rear-Wheel base considered as 1.485
         
-            vel_msg.longitudinal_velocity = float(self.latest_signals['SPEED'])*np.cos(beta)
-            vel_msg.lateral_velocity = float(self.latest_signals['SPEED'])*np.sin(beta)
+            if self.latest_signals['GEAR']==1:
+                vel_msg.longitudinal_velocity = -1.0*float(self.latest_signals['SPEED'])/3.6#*np.cos(beta)/3.6
+            else:
+                vel_msg.longitudinal_velocity = float(self.latest_signals['SPEED'])/3.6#*np.cos(beta)/3.6
+            vel_msg.lateral_velocity = 0.0#float(self.latest_signals['SPEED'])*np.sin(beta)/3.6
             vel_msg.heading_rate = float(self.latest_signals['YAW_RATE'])*0.017453
             self.velocity_publisher.publish(vel_msg)
 

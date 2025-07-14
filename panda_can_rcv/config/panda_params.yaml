@@ -1,10 +1,10 @@
 can_listener_node:
   ros__parameters:
-    mode: "test"  # Options: 'real' or 'test'
+    mode: "real"  # Options: 'real' or 'test'
     input_topic: "/csv_can_data"  # Used only in test mode
     decode_topic: "/can/decoded"  # Topic where CAN messages are published
     filter_topic: "/can/filtered"
-    dbc_file_path: "/home/avinashumeshsarma/autoware.prius/src/vehicle/external/panda_can_rcv/config/toyota_filtered.dbc"
+    dbc_file_path: "/home/carpc/Software/saurabh/autoware.prius/src/vehicle/external/prius_interface/panda_can_rcv/config/toyota_filtered.dbc"
     allowed_ids: [36, 295, 1556, 37, 180]
     driving_mode: 4 # MANUAL-4, AUTONOMOUS-1
     gear_status_topic: "/vehicle/status/gear_status"
