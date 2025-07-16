@@ -60,11 +60,11 @@ class ZMQCapnpBridgeNode(Node):
         self.state_signals = {
             'steering_angle_deg': 0.0,
             'vEgo': 0.0,
-            'gear': 0,
+            'gear': 'P',
             'turn_signal': 0,
             'hazard_lights': False,
             'yaw_rate': 0.0,
-            'control_mode': 0,
+            'control_mode': 1,
             'steeringPressed': False,
             'gasPressed': False,
             'brakePressed': False
@@ -74,6 +74,13 @@ class ZMQCapnpBridgeNode(Node):
             1: 2,  # Left
             2: 3,  # Right
             3: 1   # Disabled
+        }
+        self.gear_mapping = { #DBC -> Autoware
+            'park': 22,  # P → Autoware: 22
+            'reverse': 20,  # R → 20
+            'neutral': 1,   # N → 1
+            'drive': 3,   # D → 3
+            # B (treated as Drive) → 3
         }
 
         # ROS publishers
@@ -163,7 +170,7 @@ class ZMQCapnpBridgeNode(Node):
     def publish_ros_messages(self):
         self.publish_velocity()
         self.publish_steering()
-        # self.publish_gear()
+        self.publish_gear()
         self.publish_turn_indicators()
         self.publish_hazard_lights()
         self.publish_control_mode()
@@ -186,7 +193,9 @@ class ZMQCapnpBridgeNode(Node):
     def publish_gear(self):
         msg = GearReport()
         msg.stamp = self.get_clock().now().to_msg()
-        msg.report = int(self.state_signals['gear'])
+        # print(self.state_signals['gear'])
+        # self.get_logger().info('The error check : "%s"' % self.state_signals['gear'])
+        msg.report = int(self.gear_mapping[self.state_signals['gear']])
         self.gear_pub.publish(msg)
 
     def publish_turn_indicators(self):
