@@ -60,7 +60,7 @@ class ZMQCapnpBridgeNode(Node):
         self.state_signals = {
             'steering_angle_deg': 0.0,
             'vEgo': 0.0,
-            'gear': 'P',
+            'gear': 'park',
             'turn_signal': 0,
             'hazard_lights': False,
             'yaw_rate': 0.0,
@@ -92,7 +92,7 @@ class ZMQCapnpBridgeNode(Node):
         self.vel_pub = self.create_publisher(VelocityReport, '/vehicle/status/velocity_status', 10)
 
         # ROS subscribers
-        self.create_subscription(ActuationCommandStamped, '/control/command/actuation_cmd', self.actuation_cb, 10)
+        #self.create_subscription(ActuationCommandStamped, '/control/command/actuation_cmd', self.actuation_cb, 10)
         self.create_subscription(Control, '/control/command/control_cmd', self.control_cb, 10)
         self.create_subscription(VehicleEmergencyStamped, '/control/command/emergency_cmd', self.emergency_cb, 10)
         self.create_subscription(GearCommand, '/control/command/gear_cmd', self.gear_cmd_cb, 10)
@@ -107,15 +107,15 @@ class ZMQCapnpBridgeNode(Node):
         self.listener_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listener_thread.start()
 
-    def actuation_cb(self, msg):
-        self.control_signals['steering_angle_deg'] = msg.actuation.steer_cmd*180/math.pi
-        self.control_signals['accel'] = msg.actuation.accel_cmd
-        self.control_signals['brake'] = msg.actuation.brake_cmd
+    # def actuation_cb(self, msg):
+    #     self.control_signals['steering_angle_deg'] = msg.actuation.steer_cmd*180/math.pi
+    #     self.control_signals['accel'] = msg.actuation.accel_cmd
+    #     self.control_signals['brake'] = msg.actuation.brake_cmd
 
     def control_cb(self, msg):
-        self.control_signals['enable'] = True#msg.control_enabled
-        self.control_signals['latActive'] = True#msg.lateral_active
-        self.control_signals['longActive'] = True#msg.longitudinal_active
+        self.control_signals['accel'] = msg.longitudinal.acceleration
+        self.control_signals['steering_angle_deg'] = msg.lateral.steering_tire_angle*180/math.pi
+        # self.control_signals['longActive'] = True#msg.longitudinal_active
 
     def emergency_cb(self, msg):
         self.control_signals['emergency'] = msg.emergency
@@ -178,7 +178,7 @@ class ZMQCapnpBridgeNode(Node):
     def publish_velocity(self):
         msg = VelocityReport()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.longitudinal_velocity = float(self.state_signals['vEgo'])
+        msg.longitudinal_velocity = float(self.state_signals['vEgo'])/3.6
         msg.lateral_velocity = 0.0 #Need to change according to panda_can_rcv
         msg.heading_rate = float(self.state_signals['yaw_rate'])*0.017453 #
         msg.header.frame_id = "base_link"
