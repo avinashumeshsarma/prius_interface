@@ -221,7 +221,7 @@ class ZMQCapnpBridgeNode(Node):
             event = self.log_capnp.Event.new_message()
             event.init('carControl')
             #event.carControl.actuators.accel = self.control_signals['accel']
-            event.carControl.actuators.accel = -self.control_signals['brake'] if self.control_signals['brake'] > 0 else self.control_signals['accel']
+            event.carControl.actuators.accel = self.control_signals['accel']
             event.carControl.actuators.steeringAngleDeg = self.control_signals['steering_angle_deg']
             event.carControl.enabled = self.control_signals['enable']
             event.carControl.latActive = self.control_signals['latActive']
