@@ -178,7 +178,7 @@ class ZMQCapnpBridgeNode(Node):
     def publish_velocity(self):
         msg = VelocityReport()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.longitudinal_velocity = float(self.state_signals['vEgo'])/3.6
+        msg.longitudinal_velocity = float(self.state_signals['vEgo'])
         msg.lateral_velocity = 0.0 #Need to change according to panda_can_rcv
         msg.heading_rate = float(self.state_signals['yaw_rate'])*0.017453 #
         msg.header.frame_id = "base_link"
@@ -195,7 +195,7 @@ class ZMQCapnpBridgeNode(Node):
         msg.stamp = self.get_clock().now().to_msg()
         # print(self.state_signals['gear'])
         # self.get_logger().info('The error check : "%s"' % self.state_signals['gear'])
-        msg.report = int(self.gear_mapping[self.state_signals['gear']])
+        msg.report = 3#int(self.gear_mapping[self.state_signals['gear']])
         self.gear_pub.publish(msg)
 
     def publish_turn_indicators(self):
