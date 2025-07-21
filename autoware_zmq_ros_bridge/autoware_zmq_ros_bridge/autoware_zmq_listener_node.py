@@ -83,6 +83,9 @@ class ZMQCapnpBridgeNode(Node):
             # B (treated as Drive) → 3
         }
 
+        #Calculated from the wheel lock of 37deg and the maximum steering angle of 470deg
+        self.steer_ratio = 12.702 #15.74 from openpilot
+
         # ROS publishers
         self.control_mode_pub = self.create_publisher(ControlModeReport, '/vehicle/status/control_mode', 10)
         self.gear_pub = self.create_publisher(GearReport, '/vehicle/status/gear_status', 10)
@@ -114,7 +117,7 @@ class ZMQCapnpBridgeNode(Node):
 
     def control_cb(self, msg):
         self.control_signals['accel'] = msg.longitudinal.acceleration
-        self.control_signals['steering_angle_deg'] = msg.lateral.steering_tire_angle*180/math.pi
+        self.control_signals['steering_angle_deg'] = math.degrees(msg.lateral.steering_tire_angle)*self.steer_ratio
         # self.control_signals['longActive'] = True#msg.longitudinal_active
 
     def emergency_cb(self, msg):
@@ -180,14 +183,14 @@ class ZMQCapnpBridgeNode(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.longitudinal_velocity = float(self.state_signals['vEgo'])
         msg.lateral_velocity = 0.0 #Need to change according to panda_can_rcv
-        msg.heading_rate = float(self.state_signals['yaw_rate'])*0.017453 #
+        msg.heading_rate = math.radians(self.state_signals['yaw_rate']) #
         msg.header.frame_id = "base_link"
         self.vel_pub.publish(msg)
 
     def publish_steering(self):
         msg = SteeringReport()
         msg.stamp = self.get_clock().now().to_msg()
-        msg.steering_tire_angle = float(self.state_signals['steering_angle_deg'])*0.017453
+        msg.steering_tire_angle = math.radians(self.state_signals['steering_angle_deg']/self.steer_ratio)
         self.steer_pub.publish(msg)
 
     def publish_gear(self):
@@ -195,7 +198,7 @@ class ZMQCapnpBridgeNode(Node):
         msg.stamp = self.get_clock().now().to_msg()
         # print(self.state_signals['gear'])
         # self.get_logger().info('The error check : "%s"' % self.state_signals['gear'])
-        msg.report = 3#int(self.gear_mapping[self.state_signals['gear']])
+        msg.report = int(self.gear_mapping[self.state_signals['gear']])
         self.gear_pub.publish(msg)
 
     def publish_turn_indicators(self):
