@@ -67,7 +67,8 @@ class ZMQCapnpBridgeNode(Node):
             'control_mode': 1,
             'steeringPressed': False,
             'gasPressed': False,
-            'brakePressed': False
+            'brakePressed': False,
+            'cruiseEnabled' : False
         }
 
         self.turn_signal_mapping = { #DBC -> Autoware
@@ -114,6 +115,22 @@ class ZMQCapnpBridgeNode(Node):
     #     self.control_signals['steering_angle_deg'] = msg.actuation.steer_cmd*180/math.pi
     #     self.control_signals['accel'] = msg.actuation.accel_cmd
     #     self.control_signals['brake'] = msg.actuation.brake_cmd
+
+    def manage_openpilot_state(self):
+    if (
+        (self.state_signals['steeringPressed'] or
+        self.state_signals['brakePressed'] or
+        self.state_signals['gasPressed']) and self.state_signals['cruiseEnabled']
+    ):
+        self.control_signals['enable'] = False
+        self.control_signals['latActive'] = False
+        self.control_signals['longActive'] = False
+        # self.state_signals['control_mode'] = 4  # Manual
+    else:
+        self.control_signals['enable'] = True
+        self.control_signals['latActive'] = True
+        self.control_signals['longActive'] = True
+        # self.state_signals['control_mode'] = 1  # Autonomous
 
     def control_cb(self, msg):
         self.control_signals['accel'] = msg.longitudinal.acceleration
@@ -169,6 +186,7 @@ class ZMQCapnpBridgeNode(Node):
         self.state_signals['steeringPressed'] = car_state.steeringPressed
         self.state_signals['gasPressed'] = car_state.gasPressed
         self.state_signals['brakePressed'] = car_state.brakePressed
+        self.state_signals['cruiseEnabled'] = car_state.cruiseState.enabled
 
     def publish_ros_messages(self):
         self.publish_velocity()
@@ -221,6 +239,8 @@ class ZMQCapnpBridgeNode(Node):
 
     def send_car_control(self):
         try:
+            self.manage_openpilot_state()
+            
             event = self.log_capnp.Event.new_message()
             event.init('carControl')
             #event.carControl.actuators.accel = self.control_signals['accel']
