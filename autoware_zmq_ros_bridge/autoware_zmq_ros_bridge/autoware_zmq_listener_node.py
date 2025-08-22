@@ -9,6 +9,7 @@ import threading
 import capnp
 import os
 import math
+from std_srvs.srv import SetBool
 
 class ZMQCapnpBridgeNode(Node):
     def __init__(self):
@@ -22,6 +23,9 @@ class ZMQCapnpBridgeNode(Node):
 
         self.zmq_publish_rate=100
 
+        self.openpilot_state = True
+        self.manual_override = False
+
         # Load Cap'n Proto schema
         if capnp_dir:
             capnp.remove_import_hook()
@@ -31,16 +35,28 @@ class ZMQCapnpBridgeNode(Node):
             return
 
         # ZMQ setup
-        self.zmq_context = zmq.Context()
+       
 
-        # Subscriber socket for carState
-        self.sub_socket = self.zmq_context.socket(zmq.SUB)
-        self.sub_socket.connect("tcp://127.0.0.1:9041")
-        self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, '')
+        self.get_logger().info("Initializing ZMQ context and sockets...")
 
-        # Publisher socket for carControl
-        self.pub_socket = self.zmq_context.socket(zmq.PUB)
-        self.pub_socket.bind("tcp://127.0.0.1:63225")
+        try:
+            self.zmq_context = zmq.Context()
+            self.get_logger().info("ZMQ context created successfully")
+
+            # Subscriber socket for carState
+            self.get_logger().info("Creating ZMQ subscriber socket...")
+            self.sub_socket = self.zmq_context.socket(zmq.SUB)
+            self.sub_socket.connect("tcp://127.0.0.1:9041")
+            self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, '')
+
+            # Publisher socket for carControl
+            self.get_logger().info("Creating ZMQ publisher socket...")
+            self.pub_socket = self.zmq_context.socket(zmq.PUB)
+            self.pub_socket.bind("tcp://127.0.0.1:63225")
+            self.get_logger().info("ZMQ publisher socket created successfully")
+        except Exception as e:
+            self.get_logger().error(f"Error initializing ZMQ: {e}")
+            return
 
         # ROS-to-ZMQ control signals dictionary
         self.control_signals = {
@@ -53,7 +69,8 @@ class ZMQCapnpBridgeNode(Node):
             'emergency': False,
             'enable': True,
             'latActive': True,
-            'longActive': True
+            'longActive': True,
+            'cruise_cancel': False
         }
 
         # ZMQ-to-ROS state signals dictionary
@@ -102,11 +119,14 @@ class ZMQCapnpBridgeNode(Node):
         self.create_subscription(GearCommand, '/control/command/gear_cmd', self.gear_cmd_cb, 10)
         self.create_subscription(HazardLightsCommand, '/control/command/hazard_lights_cmd', self.hazard_cmd_cb, 10)
         self.create_subscription(TurnIndicatorsCommand, '/control/command/turn_indicators_cmd', self.turn_cmd_cb, 10)
-
+        self.enable_srv = self.create_service(SetBool, '/openpilot/enable', self.enable_cb)
                 # Start periodic publishing timer
         self.create_timer(1.0 / self.publish_rate, self.publish_ros_messages)
 
         self.create_timer(1.0 / self.zmq_publish_rate, self.send_car_control)
+
+        # Add connection health check timer
+        self.create_timer(5.0, self.check_zmq_connection)  # Check every 5 seconds
 
         self.listener_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listener_thread.start()
@@ -117,20 +137,37 @@ class ZMQCapnpBridgeNode(Node):
     #     self.control_signals['brake'] = msg.actuation.brake_cmd
 
     def manage_openpilot_state(self):
-    if (
-        (self.state_signals['steeringPressed'] or
-        self.state_signals['brakePressed'] or
-        self.state_signals['gasPressed']) and self.state_signals['cruiseEnabled']
-    ):
-        self.control_signals['enable'] = False
-        self.control_signals['latActive'] = False
-        self.control_signals['longActive'] = False
-        # self.state_signals['control_mode'] = 4  # Manual
-    else:
-        self.control_signals['enable'] = True
-        self.control_signals['latActive'] = True
-        self.control_signals['longActive'] = True
-        # self.state_signals['control_mode'] = 1  # Autonomous
+        self.manual_override = self.state_signals['steeringPressed'] or self.state_signals['brakePressed'] or self.state_signals['gasPressed']
+
+        if (self.manual_override and self.state_signals['cruiseEnabled'] ):
+            self.get_logger().info("Manual override active. Disabling OpenPilot.")
+            self.openpilot_state = False
+
+        self.control_signals['enable'] = self.openpilot_state
+        self.control_signals['latActive'] = self.openpilot_state
+        self.control_signals['longActive'] = self.openpilot_state
+        self.control_signals['cruise_cancel'] = not self.openpilot_state
+            # self.state_signals['control_mode'] = 4  # Manual
+
+    # Service callback to enable/disable openpilot
+    def enable_cb(self, request, response):
+        if request.data:
+            if not self.manual_override:  # Allow re-enabling only if no manual input
+                self.openpilot_state = True
+                self.get_logger().info("OpenPilot enabled via service")
+                response.success = True
+                response.message = "OpenPilot enabled."
+            else:
+                self.get_logger().warn("Manual override still active. Cannot enable.")
+                response.success = False
+                response.message = "Cannot enable: manual override active."
+        else:
+            self.openpilot_state = False
+            self.get_logger().info("OpenPilot disabled via service")
+            response.success = True
+            response.message = "OpenPilot disabled."
+
+        return response
 
     def control_cb(self, msg):
         self.control_signals['accel'] = msg.longitudinal.acceleration
@@ -150,14 +187,29 @@ class ZMQCapnpBridgeNode(Node):
         self.control_signals['turn_signal'] = msg.command
 
     def listen_loop(self):
+        self.get_logger().info("Starting ZMQ listener loop...")
+        connection_established = False
+
         while rclpy.ok():
             try:
+                if not connection_established:
+                    self.get_logger().info("Waiting for ZMQ connection to recieve carState messages")
                 msg = self.sub_socket.recv()
+                # Log first successful connection
+                if not connection_established:
+                    self.get_logger().info("ZMQ connection established - receiving carState messages")
+                    connection_established = True
                 # event = self.log_capnp.Event.from_bytes(msg)
                 with self.log_capnp.Event.from_bytes(msg) as evt:
                     if evt.which() == 'carState':
                         car_state = getattr(evt, 'carState')
                         self.process_car_state(car_state)
+            except zmq.error.ZMQError as e:
+                if connection_established:
+                    self.get_logger().warn(f"ZMQ connection lost: {e}")
+                    connection_established = False
+                else:
+                    self.get_logger().error(f"ZMQ connection error: {e}")
             except Exception as e:
                 self.get_logger().error(f"ZMQ receive error: {e}")
 
@@ -237,6 +289,24 @@ class ZMQCapnpBridgeNode(Node):
         msg.mode = int(self.state_signals['control_mode'])
         self.control_mode_pub.publish(msg)
 
+    def check_zmq_connection(self):
+        """Periodically check ZMQ connection health"""
+        try:
+            # Check subscriber socket
+            if self.sub_socket.closed:
+                self.get_logger().warn("ZMQ subscriber socket is closed")
+            else:
+                self.get_logger().debug("ZMQ subscriber socket is healthy")
+                
+            # Check publisher socket  
+            if self.pub_socket.closed:
+                self.get_logger().warn("ZMQ publisher socket is closed")
+            else:
+                self.get_logger().debug("ZMQ publisher socket is healthy")
+                
+        except Exception as e:
+            self.get_logger().error(f"ZMQ connection check failed: {e}")
+
     def send_car_control(self):
         try:
             self.manage_openpilot_state()
@@ -252,10 +322,19 @@ class ZMQCapnpBridgeNode(Node):
 
             event.carControl.hudControl.leadDistanceBars = 2
 
-            event.carControl.cruiseControl.cancel = False
+            event.carControl.cruiseControl.cancel = self.control_signals['cruise_cancel']
 
             self.pub_socket.send(event.to_bytes())
+
+            if not hasattr(self, '_publishing_established'):
+                self._publishing_established = True
+                self.get_logger().info("ZMQ publishing established - sending carControl messages")
+
         except Exception as e:
+            # Reset publishing status if error occurs
+            if hasattr(self, '_publishing_established'):
+                self._publishing_established = False
+                self.get_logger().warn("ZMQ publishing lost - carControl messages not being sent")
             self.get_logger().error(f"ZMQ publish error: {e}")
 
 
