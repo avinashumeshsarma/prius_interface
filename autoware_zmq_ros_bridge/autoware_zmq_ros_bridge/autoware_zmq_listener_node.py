@@ -21,10 +21,16 @@ class ZMQCapnpBridgeNode(Node):
         capnp_dir = self.get_parameter('capnp_dir').get_parameter_value().string_value
         self.publish_rate = self.get_parameter('publish_rate_hz').get_parameter_value().double_value
 
+        # New parameter
+        self.declare_parameter('openpilot_auto_reenable_timeout', 5.0)  # Timeout in seconds
+        self.openpilot_auto_reenable_timeout = self.get_parameter('openpilot_auto_reenable_timeout').get_parameter_value().double_value
+
         self.zmq_publish_rate=100
 
         self.openpilot_state = True
         self.manual_override = False
+
+        self.openpilot_disabled_time = None
 
         # Load Cap'n Proto schema
         if capnp_dir:
@@ -137,16 +143,25 @@ class ZMQCapnpBridgeNode(Node):
     #     self.control_signals['brake'] = msg.actuation.brake_cmd
 
     def manage_openpilot_state(self):
-        self.manual_override = self.state_signals['steeringPressed'] or self.state_signals['brakePressed'] or self.state_signals['gasPressed']
+        self.manual_override = self.state_signals['brakePressed'] or self.state_signals['gasPressed'] #or self.state_signals['steeringPressed']
 
-        if (self.manual_override and self.state_signals['cruiseEnabled'] ):
+        if (self.manual_override and self.state_signals['cruiseEnabled'] and self.openpilot_state):
             self.get_logger().info("Manual override active. Disabling OpenPilot.")
             self.openpilot_state = False
+            self.openpilot_disabled_time = self.get_clock().now().nanoseconds / 1e9
+        elif (self.openpilot_disabled_time is not None and self.get_clock().now().nanoseconds / 1e9 - self.openpilot_disabled_time > self.openpilot_auto_reenable_timeout):
+            self.get_logger().info("OpenPilot auto-reenable timeout reached. Enabling OpenPilot.")
+            self.openpilot_state = True
+            self.openpilot_disabled_time = None
 
         self.control_signals['enable'] = self.openpilot_state
-        self.control_signals['latActive'] = self.openpilot_state
-        self.control_signals['longActive'] = self.openpilot_state
+        self.control_signals['latActive'] = self.openpilot_state and self.state_signals['cruiseEnabled']
+        self.control_signals['longActive'] = self.openpilot_state 
         self.control_signals['cruise_cancel'] = not self.openpilot_state
+        if self.state_signals['cruiseEnabled']:
+            self.state_signals['control_mode'] = 1
+        else:
+            self.state_signals['control_mode'] = 4
             # self.state_signals['control_mode'] = 4  # Manual
 
     # Service callback to enable/disable openpilot
