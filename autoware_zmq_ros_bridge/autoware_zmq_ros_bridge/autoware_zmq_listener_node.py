@@ -10,6 +10,7 @@ import capnp
 import os
 import math
 from std_srvs.srv import SetBool
+from std_msgs.msg import Int32
 
 class ZMQCapnpBridgeNode(Node):
     def __init__(self):
@@ -76,7 +77,8 @@ class ZMQCapnpBridgeNode(Node):
             'enable': True,
             'latActive': True,
             'longActive': True,
-            'cruise_cancel': False
+            'cruise_cancel': False,
+            'openpilot_state': 0,
         }
 
         # ZMQ-to-ROS state signals dictionary
@@ -91,7 +93,8 @@ class ZMQCapnpBridgeNode(Node):
             'steeringPressed': False,
             'gasPressed': False,
             'brakePressed': False,
-            'cruiseEnabled' : False
+            'cruiseEnabled' : False,
+            'accFaulted' : True,
         }
 
         self.turn_signal_mapping = { #DBC -> Autoware
@@ -117,6 +120,7 @@ class ZMQCapnpBridgeNode(Node):
         self.steer_pub = self.create_publisher(SteeringReport, '/vehicle/status/steering_status', 10)
         self.turn_pub = self.create_publisher(TurnIndicatorsReport, '/vehicle/status/turn_indicators_status', 10)
         self.vel_pub = self.create_publisher(VelocityReport, '/vehicle/status/velocity_status', 10)
+        self.openpilot_state_pub = self.create_publisher(Int32, 'vehicle/openpilot/state', 10)
 
         # ROS subscribers
         #self.create_subscription(ActuationCommandStamped, '/control/command/actuation_cmd', self.actuation_cb, 10)
@@ -162,7 +166,17 @@ class ZMQCapnpBridgeNode(Node):
             self.state_signals['control_mode'] = 1
         else:
             self.state_signals['control_mode'] = 4
-            # self.state_signals['control_mode'] = 4  # Manual
+        
+        if self.openpilot_state:
+            if self.state_signals['accFaulted']:
+                self.control_signals['openpilot_state'] = 2 # ACC Faulted or Lock-out Condition
+            else:
+                self.control_signals['openpilot_state'] = 3 # Openpilot enabled or Ready to Engage
+                if self.state_signals['cruiseEnabled']:
+                    self.control_signals['openpilot_state'] = 4 # Openpilot Engaged
+        else:
+            self.control_signals['openpilot_state'] = 1 # Openpilot Disengaged
+
 
     # Service callback to enable/disable openpilot
     def enable_cb(self, request, response):
@@ -254,6 +268,7 @@ class ZMQCapnpBridgeNode(Node):
         self.state_signals['gasPressed'] = car_state.gasPressed
         self.state_signals['brakePressed'] = car_state.brakePressed
         self.state_signals['cruiseEnabled'] = car_state.cruiseState.enabled
+        self.state_signals['accFaulted'] = car_state.accFaulted
 
     def publish_ros_messages(self):
         self.publish_velocity()
@@ -262,6 +277,12 @@ class ZMQCapnpBridgeNode(Node):
         self.publish_turn_indicators()
         self.publish_hazard_lights()
         self.publish_control_mode()
+        self.publish_openpilot_state()
+
+    def publish_openpilot_state(self):
+        msg = Int32()
+        msg.data = self.control_signals['openpilot_state']
+        self.openpilot_state_pub.publish(msg)
 
     def publish_velocity(self):
         msg = VelocityReport()
