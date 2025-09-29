@@ -79,6 +79,7 @@ class ZMQCapnpBridgeNode(Node):
             'longActive': True,
             'cruise_cancel': False,
             'openpilot_state': 0,
+            'longControlState':0,
         }
 
         # ZMQ-to-ROS state signals dictionary
@@ -120,7 +121,7 @@ class ZMQCapnpBridgeNode(Node):
         self.steer_pub = self.create_publisher(SteeringReport, '/vehicle/status/steering_status', 10)
         self.turn_pub = self.create_publisher(TurnIndicatorsReport, '/vehicle/status/turn_indicators_status', 10)
         self.vel_pub = self.create_publisher(VelocityReport, '/vehicle/status/velocity_status', 10)
-        self.openpilot_state_pub = self.create_publisher(Int32, 'vehicle/openpilot/state', 10)
+        self.openpilot_state_pub = self.create_publisher(Int32, '/vehicle/openpilot/state', 10)
 
         # ROS subscribers
         #self.create_subscription(ActuationCommandStamped, '/control/command/actuation_cmd', self.actuation_cb, 10)
@@ -140,6 +141,16 @@ class ZMQCapnpBridgeNode(Node):
 
         self.listener_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listener_thread.start()
+
+        #For Testing
+        self.steering_test_pub = self.create_publisher(SteeringReport, '/vehicle/status/steering_test', 10)
+        self.create_timer(0.01, self.publish_steering_test)
+    def publish_steering_test(self):
+        msg = SteeringReport()
+        msg.stamp = self.get_clock().now().to_msg()
+        msg.steering_tire_angle = math.radians(self.state_signals['steering_angle_deg']/self.steer_ratio)
+        self.steering_test_pub.publish(msg)
+        
 
     # def actuation_cb(self, msg):
     #     self.control_signals['steering_angle_deg'] = msg.actuation.steer_cmd*180/math.pi
@@ -162,6 +173,12 @@ class ZMQCapnpBridgeNode(Node):
         self.control_signals['latActive'] = self.openpilot_state and self.state_signals['cruiseEnabled']
         self.control_signals['longActive'] = self.openpilot_state 
         self.control_signals['cruise_cancel'] = not self.openpilot_state
+
+        if (self.openpilot_state and self.state_signals['cruiseEnabled'] and not self.manual_override):
+            self.control_signals['longControlState'] = 1  # PID - OpenPilot Longitudinal Control
+        else:
+            self.control_signals['longControlState'] = 0  # OFF - OpenPilot Longitudinal Control
+
         if self.state_signals['cruiseEnabled']:
             self.state_signals['control_mode'] = 1
         else:
@@ -287,7 +304,10 @@ class ZMQCapnpBridgeNode(Node):
     def publish_velocity(self):
         msg = VelocityReport()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.longitudinal_velocity = float(self.state_signals['vEgo'])
+        vel= float(self.state_signals['vEgo'])
+        if self.state_signals['gear']=='reverse':
+            vel=-vel
+        msg.longitudinal_velocity = vel
         msg.lateral_velocity = 0.0 #Need to change according to panda_can_rcv
         msg.heading_rate = math.radians(self.state_signals['yaw_rate']) #
         msg.header.frame_id = "base_link"
@@ -355,6 +375,7 @@ class ZMQCapnpBridgeNode(Node):
             event.carControl.enabled = self.control_signals['enable']
             event.carControl.latActive = self.control_signals['latActive']
             event.carControl.longActive = self.control_signals['longActive']
+            event.carControl.actuators.longControlState = self.control_signals['longControlState']
 
             event.carControl.hudControl.leadDistanceBars = 2
 
